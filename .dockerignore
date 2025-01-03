@@ -2,4 +2,5 @@
 .gitea
 data
 dist
+docs
 reports

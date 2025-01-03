@@ -41,6 +41,11 @@ docs-open: ## Open the documentation in your default browser (Linux only)
 docs-serve: ## Run the documentation server locally
 	hatch run docs:serve
 
+docs-diagrams: ## Update the diagrams
+	hatch run docs:python3 ./docs/diagrams/kroki-convert.py ./docs/diagrams/src ./docs/content/diagrams
+
+docs-update: docs-diagrams ## Update the contents of documentation including diagrams
+
 start: ## Start the development environment with docker compose
 	CURRENT_UID=$(shell id -u):$(shell id -g) docker compose up -d
 

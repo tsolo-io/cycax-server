@@ -49,6 +49,7 @@ check = "mypy --install-types --non-interactive {args:src/cycax_server tests}"
 [tool.hatch.envs.docs]
 dependencies = [ # Use the latest documentation tools.
   "mkdocs",
+  "httpx",
   "mkdocs-material",
   "mkdocstrings[python]",
 ]
