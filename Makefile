@@ -13,8 +13,8 @@ help:
 build: ## Build containers
 	hatch dep show requirements > requirements.txt
 	echo "." >> requirements.txt
-	$(DOCKER_BIN) build . -f Dockerfile -t tsolo/s3probe:${TAG}
-	docker compose build
+	$(DOCKER_BIN) build . -f Dockerfile -t tsolo/cycax_server:${TAG}
+	# docker compose build
 
 run: ## Run the CyCAx Server directly
 	hatch run uvicorn cycax_server.main:app --reload --host 0.0.0.0 --port 8765
