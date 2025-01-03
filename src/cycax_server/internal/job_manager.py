@@ -48,7 +48,7 @@ class Job:
         info["type"] = "job"
         info["attributes"] = {}
         info["attributes"]["state"] = self.get_state()
-        info["attributes"]["name"] = self.name
+        info["attributes"]["part_name"] = self._part_name
         if not short:
             info["attributes"]["path"] = self._job_path
         return info

@@ -12,9 +12,8 @@ router = APIRouter()
 
 
 class PartSpec(BaseModel):
-    id: str | None = Field(None, alias="name")
+    name: str | None = Field(None, alias="id")
     features: list[dict]
-    # name: str | None = None
 
 
 class TaskState(BaseModel):
