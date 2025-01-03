@@ -28,11 +28,12 @@ class Job:
     """A job."""
 
     def __init__(self, jobs_path: Path, name: str):
-        self._jobs_path = jobs_path
-        self.name = name
-        self._job_path = jobs_path / name
-        self.artifacts = {}
-        self._tasks = {}
+        self._jobs_path: Path = jobs_path
+        self.name: str = name
+        self._job_path: Path = jobs_path / name
+        self.artifacts: dict = {}
+        self._tasks: dict = {}
+        self._state: JobState = None
 
     def __str__(self) -> str:
         return self.name
@@ -53,19 +54,31 @@ class Job:
         return json.loads(spec_file.read_text())
 
     def get_state(self) -> dict:
-        # Very Wrong. Only load on startup.
+        state_map = {"job": self._state, "tasks": self._tasks}
+        return state_map
+
+    def load(self):
         state_path = self._job_path / STATE_FN
         if state_path.exists():
             state_map = json.loads(state_path.read_text())
         else:
-            state_map = {"job": JobState.CREATED}
-        if "tasks" not in state_map:
-            state_map["tasks"] = self._tasks
-        return state_map
+            state_map = {}
 
-    def set_state(self, state: JobState | None = None):
-        """Directly update the Job state."""
-        states = self.get_state()
+        self._state = state_map.get("job", JobState.CREATED)
+        for task_name, task_state in state_map.get("tasks", {}).items():
+            self.set_task_state(task_name, task_state, save=False)
+        self.set_state()
+        self.save_state()
+
+    def save_state(self):
+        states = {}
+        states["job"] = self._state
+        states["tasks"] = self._tasks
+        state_path = self._job_path / STATE_FN
+        state_path.write_text(json.dumps(states))
+
+    def set_state(self, state: JobState | None = None, *, save: bool = True):
+        """Directly update the Job state or look through task states and set accordingly."""
         if state is None:
             task_state_set = set(self._tasks.values())
             if len(task_state_set) == 0:
@@ -81,28 +94,27 @@ class Job:
             else:
                 # When tasks are in different states the Job is running.
                 state = JobState.RUNNING
-        else:
-            states["job"] = state.name
-        states["tasks"] = self._tasks
-        state_path = self._job_path / STATE_FN
-        state_path.write_text(json.dumps(states))
+        self._state = state
+        if save:
+            self.save_state()
 
     def get_tasks(self) -> dict:
         return self._tasks
 
-    def set_task_state(self, name: str, state: TaskState | None = None):
+    def set_task_state(self, name: str, state: TaskState | None = None, *, save: bool = True):
         if state is None:
             state = TaskState.CREATED
         self._tasks[name.lower()] = state
-        self.set_state()
+        if save:
+            self.set_state()
+            self.save_state()
 
     def save_spec(self, spec: dict):
         """Save the Part Spec this Job is for."""
         self._job_path.mkdir(exist_ok=True, parents=True)
         spec_file = self._job_path / PART_FN
         spec_file.write_text(json.dumps(spec))
-        self.set_state(JobState.CREATED)
-        self.set_task_state("freecad")
+        self.set_task_state("freecad")  # For now: Give every job a FreeCAD task.
 
     def delete(self):
         """Delete the Job, remove all files and then remove the directory."""
@@ -150,12 +162,12 @@ class JobManager:
             self._parts_path.mkdir()
 
         for job_path in self._jobs_path.iterdir():
-            job = Job(jobs_path=self._jobs_path, name=job_path.name)
-            logging.warning("Add job %s", job)
-            self._jobs[job.name] = job
-        for part in self._parts_path.iterdir():
-            logging.warning("Add part %s", part.name)
-            self._parts[part.name] = {"path": part}
+            part_spec = job_path / PART_FN
+            if part_spec.exists():
+                job = Job(jobs_path=self._jobs_path, name=job_path.name)
+                job.load()
+                logging.warning("Add job %s", job)
+                self._jobs[job.name] = job
 
     def list_jobs(self) -> list[Job]:
         return self._jobs.values()
