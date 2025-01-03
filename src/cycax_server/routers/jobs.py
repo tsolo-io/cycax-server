@@ -31,6 +31,13 @@ async def read_jobs(manager: Annotated[JobManager, Depends(get_job_manager)]):
     return reply
 
 
+@router.post("/jobs", tags=["Jobs"])
+async def create_job(spec: PartSpec, manager: Annotated[JobManager, Depends(get_job_manager)]):
+    """ """
+    job = manager.job_from_spec(spec.model_dump())
+    return {"data": job.dump(short=True)}
+
+
 @router.get("/jobs/{job_id}", tags=["Jobs"])
 async def read_job(job_id: str, manager: Annotated[JobManager, Depends(get_job_manager)]):
     """ """
@@ -46,13 +53,6 @@ async def delete_job(job_id: str, manager: Annotated[JobManager, Depends(get_job
     manager.delete_job(job_id)
     data = {"id": job_id, "type": "job", "attributes": {"state": {"job": "DELETED"}}}
     return {"data": data}
-
-
-@router.post("/jobs", tags=["Jobs"])
-async def create_job(spec: PartSpec, manager: Annotated[JobManager, Depends(get_job_manager)]):
-    """ """
-    job = manager.job_from_spec(spec.model_dump())
-    return {"data": job.dump(short=True)}
 
 
 @router.get("/jobs/{job_id}/tasks", tags=["Jobs"])

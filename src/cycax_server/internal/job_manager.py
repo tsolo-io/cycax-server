@@ -30,13 +30,17 @@ class Job:
     def __init__(self, jobs_path: Path, name: str):
         self._jobs_path: Path = jobs_path
         self.name: str = name
-        self._job_path: Path = jobs_path / name
         self.artifacts: dict = {}
+        self._part_name: str = None
+        self._job_path: Path = jobs_path / name
         self._tasks: dict = {}
         self._state: JobState = None
 
     def __str__(self) -> str:
-        return self.name
+        if self._part_name:
+            return f"{self.name} ({self._part_name})"
+        else:
+            return self.name
 
     def dump(self, *, short=False) -> dict:
         info = {}
@@ -44,8 +48,8 @@ class Job:
         info["type"] = "job"
         info["attributes"] = {}
         info["attributes"]["state"] = self.get_state()
+        info["attributes"]["name"] = self.name
         if not short:
-            info["attributes"]["name"] = self.name
             info["attributes"]["path"] = self._job_path
         return info
 
@@ -58,6 +62,8 @@ class Job:
         return state_map
 
     def load(self):
+        spec = self.get_spec()
+        self._part_name = spec.get("name")
         state_path = self._job_path / STATE_FN
         if state_path.exists():
             state_map = json.loads(state_path.read_text())
@@ -111,10 +117,10 @@ class Job:
 
     def save_spec(self, spec: dict):
         """Save the Part Spec this Job is for."""
+        self._part_name = spec.get("name")
         self._job_path.mkdir(exist_ok=True, parents=True)
         spec_file = self._job_path / PART_FN
         spec_file.write_text(json.dumps(spec))
-        self.set_task_state("freecad")  # For now: Give every job a FreeCAD task.
 
     def delete(self):
         """Delete the Job, remove all files and then remove the directory."""
@@ -166,7 +172,7 @@ class JobManager:
             if part_spec.exists():
                 job = Job(jobs_path=self._jobs_path, name=job_path.name)
                 job.load()
-                logging.warning("Add job %s", job)
+                logging.warning("Add job %s", str(job))
                 self._jobs[job.name] = job
 
     def list_jobs(self) -> list[Job]:
@@ -199,7 +205,12 @@ class JobManager:
         sha1hash = hashlib.sha1()  # noqa: S324
         sha1hash.update(spec_str.encode())
         name = sha1hash.hexdigest()
-        job = Job(name=name, jobs_path=self._jobs_path)
-        job.save_spec(spec)
-        self._jobs[name] = job
+
+        if name in self._jobs:
+            job = self._jobs[name]
+        else:
+            job = Job(name=name, jobs_path=self._jobs_path)
+            job.save_spec(spec)
+            job.set_task_state("freecad")  # For now: Give every job a FreeCAD task.
+            self._jobs[name] = job
         return job
