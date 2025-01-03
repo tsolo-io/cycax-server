@@ -68,7 +68,7 @@ dependencies = [ # Use the latest linter and code checking tools.
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/tsolo_ceph tests}"
 style = ["ruff check {args:.}", "black --check --diff {args:.}"]
-spell = "typos --exclude='**/*.svg' --exclude='**/*.css' --exclude='**/*.png' --exclude='**/*.json' --exclude='docs/site' {args:.}"
+spell = "typos --exclude='**/*.svg' --exclude='**/*.css' --exclude='**/*.png' --exclude='**/*.json' --exclude='docs/site' --exclude='reports' {args:.}"
 fmt = ["black {args:.}", "ruff check --fix {args:.}", "style"]
 all = ["style", "typing"]
 
