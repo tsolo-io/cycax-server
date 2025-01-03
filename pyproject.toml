@@ -10,9 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 keywords = []
-authors = [
-  { name = "Martin Slabber", email = "martin@tsolo.io" },
-]
+authors = [{ name = "Martin Slabber", email = "martin@tsolo.io" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
@@ -23,7 +21,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = [ ]
+dependencies = []
 
 [project.urls]
 Documentation = "https://github.com/Martin Slabber/cycax-server#readme"
@@ -42,19 +40,17 @@ dependencies = [
   "pydantic-settings==2.7.0",
   "uvicorn[standard]==0.34.0",
   "fastapi[standard]==0.115.6",
-  "prometheus_fastapi_instrumentator==7.0.0"
+  "prometheus_fastapi_instrumentator==7.0.0",
 ]
 [tool.hatch.envs.types]
-extra-dependencies = [
-  "mypy>=1.0.0",
-]
+extra-dependencies = ["mypy>=1.0.0"]
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:src/cycax_server tests}"
 [tool.hatch.envs.docs]
 dependencies = [ # Use the latest documentation tools.
   "mkdocs",
   "mkdocs-material",
-  "mkdocstrings[python]"
+  "mkdocstrings[python]",
 ]
 
 [tool.hatch.envs.docs.scripts]
@@ -71,20 +67,10 @@ dependencies = [ # Use the latest linter and code checking tools.
 ]
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/tsolo_ceph tests}"
-style = [
-  "ruff check {args:.}",
-  "black --check --diff {args:.}",
-]
-spell = "typos {args:.}"
-fmt = [
-  "black {args:.}",
-  "ruff check --fix {args:.}",
-  "style",
-]
-all = [
-  "style",
-  "typing",
-]
+style = ["ruff check {args:.}", "black --check --diff {args:.}"]
+spell = "typos --exclude='**/*.svg' --exclude='**/*.css' --exclude='**/*.png' --exclude='**/*.json' --exclude='docs/site' {args:.}"
+fmt = ["black {args:.}", "ruff check --fix {args:.}", "style"]
+all = ["style", "typing"]
 
 [tool.black]
 target-version = ["py310"]
@@ -127,9 +113,15 @@ lint.ignore = [
   # Allow boolean positional values in function calls, like `dict.get(... True)`
   "FBT003",
   # Ignore checks for possible passwords
-  "S105", "S106", "S107",
+  "S105",
+  "S106",
+  "S107",
   # Ignore complexity
-  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  "C901",
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
 ]
 lint.unfixable = [
   #"F401", # Don't touch unused imports
