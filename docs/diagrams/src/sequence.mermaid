@@ -18,14 +18,14 @@ sequenceDiagram
     C-xS: Check if Job Part 1 is done
     Note right of E: Check Server for completion
     C-xS: Check Job Part 1 is done
-    F->>S: Retun Part 1 Artifact 1
-    F->>-S: Retun Part 1 Artifact 2
+    F->>S: Return Part 1 Artifact 1
+    F->>-S: Return Part 1 Artifact 2
     C->>S: Check Job Part 1 is done
     C<<->>S: Download Part 1 Artifact 1
     C<<->>S: Download Part 1 Artifact 2
     par For all unprocessed Parts
     S<<->>+F: Get Part n Specifications
-    F-->>S: Retun Part n Artifacts
+    F-->>S: Return Part n Artifacts
     F->>-S: Mark Task as Completed
     end
     par For all unprocessed Parts

@@ -146,16 +146,16 @@ def fetch_image(address, source_format: str, data_file: Path, image_file: Path) 
     data = data_file.read_text().encode()
     b64data = base64.urlsafe_b64encode(zlib.compress(data, 9)).decode("ascii")
 
-    for n in range(4):
+    for _ in range(4):
         try:
-            r = httpx.get(f"{address}/{source_format}/{IMG_FORMAT}/{b64data}")
+            reply = httpx.get(f"{address}/{source_format}/{IMG_FORMAT}/{b64data}")
         except httpx.ConnectError as error:
             raise error
         except httpx.HTTPError as error:
             logging.error(error)
 
-        if r.status_code == httpx.codes.OK:
-            image_file.write_bytes(r.content)
+        if reply.status_code == httpx.codes.OK:
+            image_file.write_bytes(reply.content)
             logging.info(f"Read {data_file} -> Write {image_file}")
             return True
     return False

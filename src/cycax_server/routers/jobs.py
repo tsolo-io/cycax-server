@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from cycax_server.dependencies import JobManager, get_job_manager
 
@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 class PartSpec(BaseModel):
-    name: str | None = Field(None, alias="id")
+    name: str
     features: list[dict]
 
 
