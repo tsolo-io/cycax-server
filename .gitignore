@@ -169,3 +169,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+docs/site
+requirements.txt
+data
+reports
+docs/diagrams/src/.kroki_remember

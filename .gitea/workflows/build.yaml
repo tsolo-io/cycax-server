@@ -1,0 +1,27 @@
+---
+
+name: Build
+run-name: CyCAx Server
+on: [push]
+
+jobs:
+  testandbuild:
+    runs-on: "ubuntu-22.04"
+    container:
+      image: gitea.tu.tsolo.net/tsolo/ubuntu:22-dev
+    steps:
+      - name: Check out repository code
+        uses: https://gitea.com/actions/checkout@v4
+      - name: Run tests
+        run: |
+          make test-on-ci
+      - name: Create requirements.txt
+        run: |
+          hatch dep show requirements > requirements.txt
+          echo "." >> requirements.txt
+      - name: Make containers and publish
+        uses: https://gitea.tu.tsolo.net/Tsolo/container-build-publish-action@main
+        with:
+          registrypassword: ${{ secrets.REGISTRYPASSWORD }}
+      - name: Make docs and upload
+        uses: https://gitea.tu.tsolo.net/Tsolo/make-docs-upload-action@main

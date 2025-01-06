@@ -1,0 +1,39 @@
+sequenceDiagram
+    actor E as Engineer
+    participant C as CyCAx
+    participant S as CyCAx Server
+    participant F as FreeCAD CyCAx Worker
+    loop Every 5 seconds
+        F-xS: Check for available Tasks
+    end
+    E->>C: Edit Code
+    E->>+C: Run Code
+    Note right of E: Compile CyCAx Parts
+    C->>S: Post Job Part 1
+    Note right of E: Send Parts to Server
+    C->>S: Post Job Part 2
+    F<<->>S: Check for available Tasks
+    S<<->>+F: Get Part 1 Specifications 
+    C->>S: Post Job Part n
+    C-xS: Check if Job Part 1 is done
+    Note right of E: Check Server for completion
+    C-xS: Check Job Part 1 is done
+    F->>S: Return Part 1 Artifact 1
+    F->>-S: Return Part 1 Artifact 2
+    C->>S: Check Job Part 1 is done
+    C<<->>S: Download Part 1 Artifact 1
+    C<<->>S: Download Part 1 Artifact 2
+    par For all unprocessed Parts
+    S<<->>+F: Get Part n Specifications
+    F-->>S: Return Part n Artifacts
+    F->>-S: Mark Task as Completed
+    end
+    par For all unprocessed Parts
+    C->>S: Check Job Part n is done
+    C<<->>S: Download Part n Artifacts
+    end
+    Note right of E: Files received notify Engineer 
+    C->>-E: Run complete
+    loop Every 5 seconds
+        F-xS: Check for available Tasks
+    end
