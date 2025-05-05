@@ -82,7 +82,7 @@ class ReproccessChecker:
         self.reference_file.write_text(json.dumps(self.reference))
 
     def need_update(self, source_file: Path, target_file: Path) -> bool:
-        """Check if there is an update nesesary.
+        """Check if there is an update necessary.
 
         Args:
             source_file: The diagram source file.
