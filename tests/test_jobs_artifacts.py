@@ -1,5 +1,4 @@
-"""Tests the upload, list and download of a Jobs artifacts.
-"""
+"""Tests the upload, list and download of a Jobs artifacts."""
 
 import tempfile
 
@@ -36,7 +35,7 @@ def file_upload(client: TestClient, job_id: str, filename: str, contents: str):
 
 def test_post_job():
     # Remove an check
-    job_id = "97d170e1550eee4afc0af065b78cda302a97674c"
+    job_id = "cb891ab1ca8a68ce8610f0a1085e53fd2d4741f2"
     utils.remove_job(client, job_id)
     # Create a new Post.
     data = {"name": "test-part1", "features": []}

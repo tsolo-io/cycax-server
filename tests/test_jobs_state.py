@@ -25,7 +25,7 @@ def set_job_task(client: TestClient, job_id: str, taskname: str, state: str | No
 
 
 def test_state_update():
-    job_id = "a028c1a2740855c53019e9c101eb1d3ebaf2a6c1"
+    job_id = "ce5d2d744108a6221a7094d5fc2c6086f633afc1"
     utils.remove_job(client, job_id)
     # Create a new Post.
     feature = {

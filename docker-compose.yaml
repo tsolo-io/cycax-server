@@ -1,6 +1,5 @@
 ---
 
-version: "3.7"
 services:
   cycax_server:
     build:
@@ -12,4 +11,5 @@ services:
     ports:
       - 8765:8765
     volumes:
+      - .:/app
       - ./data:/data

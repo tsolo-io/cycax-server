@@ -7,6 +7,7 @@ from typing import ClassVar
 
 from cycax_server.internal.settings import Settings
 
+# Filenames
 PART_FN = "part.json"
 STATE_FN = "state.json"
 
@@ -27,68 +28,77 @@ class TaskState(str, Enum):
 class Job:
     """A job."""
 
-    def __init__(self, jobs_path: Path, name: str):
+    def __init__(self, jobs_path: Path, job_id: str):
         self._jobs_path: Path = jobs_path
-        self.name: str = name
+        self.job_id: str = job_id
         self.artifacts: dict = {}
-        self._part_name: str = None
-        self._job_path: Path = jobs_path / name
+        self.part_name: str | None = None
+        self._job_path: Path = jobs_path / job_id
         self._tasks: dict = {}
-        self._state: JobState = None
+        self.state: JobState = JobState.CREATED
 
     def __str__(self) -> str:
-        if self._part_name:
-            return f"{self.name} ({self._part_name})"
+        if self.part_name:
+            return f"{self.job_id} ({self.part_name})"
         else:
-            return self.name
+            return self.job_id
 
     def dump(self, *, short=False) -> dict:
+        """Dump the job information to a dictionary."""
         info = {}
-        info["id"] = self.name
+        info["id"] = self.job_id
         info["type"] = "job"
         info["attributes"] = {}
         info["attributes"]["state"] = self.get_state()
-        info["attributes"]["part_name"] = self._part_name
+        info["attributes"]["part_name"] = self.part_name
         if not short:
             info["attributes"]["path"] = self._job_path
         return info
 
     def get_spec(self) -> dict:
+        """Load the job specification from disk and return it."""
         spec_file = self._job_path / PART_FN
         return json.loads(spec_file.read_text())
 
     def get_state(self) -> dict:
-        state_map = {"job": self._state, "tasks": self._tasks}
+        state_map = {"job": self.state, "tasks": self._tasks}
         return state_map
 
     def load(self):
+        """Load the job from disk and initialize the Job object."""
         spec = self.get_spec()
-        self._part_name = spec.get("name")
+        self.part_name = spec.get("name")
         state_path = self._job_path / STATE_FN
         if state_path.exists():
             state_map = json.loads(state_path.read_text())
         else:
             state_map = {}
 
-        self._state = state_map.get("job", JobState.CREATED)
+        self.state = state_map.get("job", JobState.CREATED)
         for task_name, task_state in state_map.get("tasks", {}).items():
             self.set_task_state(task_name, task_state, save=False)
         self.set_state()
         self.save_state()
 
     def save_state(self):
+        """Save the Job state to disk."""
         states = {}
-        states["job"] = self._state
+        states["job"] = self.state
         states["tasks"] = self._tasks
         state_path = self._job_path / STATE_FN
         state_path.write_text(json.dumps(states))
 
-    def set_state(self, state: JobState | None = None, *, save: bool = True):
-        """Directly update the Job state or look through task states and set accordingly."""
+    def set_state(self, state: JobState | str | None = None, *, save: bool = True):
+        """Directly update the Job state or look through task states and set accordingly.
+
+        Args:
+            state: The state to set the Job to.
+            save: Whether to save the state to disk.
+        """
         if state is None:
             task_state_set = set(self._tasks.values())
             if len(task_state_set) == 0:
-                state = JobState.CREATE
+                state = JobState.CREATED
             elif len(task_state_set) == 1:
                 # All tasks have the same state.
                 if task_state_set.intersection((TaskState.COMPLETED,)):
@@ -100,16 +110,25 @@ class Job:
             else:
                 # When tasks are in different states the Job is running.
                 state = JobState.RUNNING
-        self._state = state
+        self.state = state
         if save:
             self.save_state()
 
     def get_tasks(self) -> dict:
+        """Get the tasks associated with this Job."""
         return self._tasks
 
     def set_task_state(self, name: str, state: TaskState | None = None, *, save: bool = True):
+        """Set the state of a task.
+
+        Args:
+            name: The name of the task.
+            state: The state to set the task to.
+            save: Whether to save the state to disk.
+        """
         if state is None:
-            state = TaskState.CREATED
+            # Make sure it exists.
+            state = self._tasks.get(name.lower(), TaskState.CREATED)
         self._tasks[name.lower()] = state
         if save:
             self.set_state()
@@ -117,7 +136,7 @@ class Job:
 
     def save_spec(self, spec: dict):
         """Save the Part Spec this Job is for."""
-        self._part_name = spec.get("name")
+        self.part_name = spec.get("name")
         self._job_path.mkdir(exist_ok=True, parents=True)
         spec_file = self._job_path / PART_FN
         spec_file.write_text(json.dumps(spec))
@@ -136,20 +155,20 @@ class Job:
         return filepath
 
     def list_artifacts(self) -> list[str]:
-        return self.artifacts.keys()
+        return list(self.artifacts.keys())
 
     def get_artifact_path(self, name: str) -> Path:
         return self.artifacts[name]
 
 
 class JobManager:
+    """Keep track of all jobs."""
 
-    _jobs: ClassVar[dict] = {}
-    _parts: ClassVar[dict] = {}
+    _jobs: ClassVar[dict[str, Job]] = {}
+    _parts: ClassVar[dict[str, dict[str, str]]] = {}
 
     def __init__(self, settings: Settings):
         self._settings = settings
-        self._spool_path = self._settings.var_dir / "freecad_spool"
         self._parts_path = self._settings.var_dir / "parts"
         self._jobs_path = self._settings.var_dir / "jobs"
 
@@ -170,18 +189,53 @@ class JobManager:
         for job_path in self._jobs_path.iterdir():
             part_spec = job_path / PART_FN
             if part_spec.exists():
-                job = Job(jobs_path=self._jobs_path, name=job_path.name)
+                job = Job(jobs_path=self._jobs_path, job_id=job_path.name)
                 job.load()
                 logging.warning("Add job %s", str(job))
-                self._jobs[job.name] = job
+                self._jobs[job.job_id] = job
 
-    def list_jobs(self) -> list[Job]:
-        return self._jobs.values()
+    def update_part_job_relation(self, job: Job):
+        part_name = job.part_name
+        if part_name:
+            if part_name not in self._parts:
+                self._parts[part_name] = {}
+            self._parts[part_name][job.job_id] = {"job_id": job.job_id}
+            self._parts[part_name]["."] = {"job_id": job.job_id}
 
-    def get_job(self, name: str) -> Job:
-        return self._jobs.get(name)
+    def list_parts(self) -> list[str]:
+        return list(self._parts.keys())
 
-    def delete_job(self, name: str):
+    def get_part(self, part_name: str) -> dict[str, dict]:
+        return self._parts.get(part_name, {})
+
+    def list_jobs(
+        self, states_in: list[JobState] | None = None, states_not_in: list[JobState] | None = None
+    ) -> list[Job]:
+        """List the jobs in the registry.
+
+        The jobs returned can be filtered by state.
+
+        Args:
+            states_in: A list of states to filter the jobs by. Only return jobs with these states.
+            states_not_in: A list of states to exclude from the jobs. Do not return jobs with these states.
+
+        Returns:
+            A list of jobs.
+        """
+        return_jobs = []
+        states_not_in_set = set(states_not_in) if states_not_in else set()
+        for job in self._jobs.values():
+            logging.warning("job %s, states_in %s, states_not_in %s", job, states_in, states_not_in)
+            if job.state in states_not_in_set:
+                continue
+            if states_in is None or job.state in states_in:
+                return_jobs.append(job)
+        return return_jobs
+
+    def get_job(self, job_id: str) -> Job | None:
+        return self._jobs.get(job_id)
+
+    def delete_job(self, job_id: str):
         """Delete a Job.
 
         Will delete a job even if it is not in the registry.
@@ -190,27 +244,34 @@ class JobManager:
         Args:
             name: The name/id of the Job.
         """
-        if name in self._jobs:
-            job = self.get_job(name)
-            job.delete()
-            del self._jobs[name]
+        if job_id in self._jobs:
+            job = self.get_job(job_id)
+            if job:
+                job.delete()
+            del self._jobs[job_id]
         else:
-            job = Job(name=name, jobs_path=self._jobs_path)
+            job = Job(job_id=job_id, jobs_path=self._jobs_path)
             job.delete()
 
     def job_from_spec(self, spec: dict) -> Job:
         """Create a new Job from a Part Specification."""
         # We only use the features to determine the JOB ID.
-        spec_str = json.dumps(spec.get("features", []))
         sha1hash = hashlib.sha1()  # noqa: S324
-        sha1hash.update(spec_str.encode())
-        name = sha1hash.hexdigest()
+        features_spec = spec.get("features", [])
+        sha1hash.update(json.dumps(features_spec).encode())
+        parts_spec = spec.get("parts", [])
+        sha1hash.update(json.dumps(parts_spec).encode())
+        job_id = sha1hash.hexdigest()
 
-        if name in self._jobs:
-            job = self._jobs[name]
+        if job_id in self._jobs:
+            job = self._jobs[job_id]
         else:
-            job = Job(name=name, jobs_path=self._jobs_path)
+            job = Job(job_id=job_id, jobs_path=self._jobs_path)
             job.save_spec(spec)
-            job.set_task_state("freecad")  # For now: Give every job a FreeCAD task.
-            self._jobs[name] = job
+            if features_spec:
+                job.set_task_state("freecad", TaskState.CREATED)  # For now: Give every parts job a FreeCAD task.
+            if parts_spec:
+                job.set_task_state("blender", TaskState.CREATED)  # For now: Give every assembly job a Blender task.
+            self._jobs[job_id] = job
+            self.update_part_job_relation(job)
         return job
