@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import ClassVar
@@ -30,12 +31,15 @@ class Job:
 
     def __init__(self, jobs_path: Path, job_id: str):
         self._jobs_path: Path = jobs_path
+        self._last_updated: float | None = None
         self.job_id: str = job_id
         self.artifacts: dict = {}
         self.part_name: str | None = None
         self._job_path: Path = jobs_path / job_id
         self._tasks: dict = {}
         self.state: JobState = JobState.CREATED
+        self.feature_count: int = 0
+        self.parts_count: int = 0
 
     def __str__(self) -> str:
         if self.part_name:
@@ -49,15 +53,35 @@ class Job:
         info["id"] = self.job_id
         info["type"] = "job"
         info["attributes"] = {}
+        if self._last_updated is None:
+            last = datetime.now(tz=UTC).isoformat()
+        else:
+            last = datetime.fromtimestamp(self._last_updated, tz=UTC).isoformat()
+        info["attributes"]["last_updated"] = last
         info["attributes"]["state"] = self.get_state()
         info["attributes"]["part_name"] = self.part_name
+        info["attributes"]["feature_count"] = self.feature_count
+        info["attributes"]["part_count"] = self.parts_count
         if not short:
             info["attributes"]["path"] = self._job_path
         return info
 
+    def get_age_hours(self) -> int:
+        """Get the number of full hours that elapsed since the job was last updated.
+
+        Returns:
+            int: The number of full hours that elapsed since the job was last updated.
+        """
+        if self._last_updated is None:
+            return 0
+        delta = datetime.now(tz=UTC) - datetime.fromtimestamp(self._last_updated, tz=UTC)
+        return int(delta.total_seconds() // 3600)
+
     def get_spec(self) -> dict:
         """Load the job specification from disk and return it."""
         spec_file = self._job_path / PART_FN
+        if self._last_updated is None:
+            self._last_updated = self._job_path.stat().st_mtime
         return json.loads(spec_file.read_text())
 
     def get_state(self) -> dict:
@@ -68,6 +92,17 @@ class Job:
         """Load the job from disk and initialize the Job object."""
         spec = self.get_spec()
         self.part_name = spec.get("name")
+        features = spec.get("feature_count")
+        if features:
+            self.feature_count = len(features)
+        else:
+            self.feature_count = 0
+        parts = spec.get("part_count")
+        if parts:
+            self.part_count = len(parts)
+        else:
+            self.part_count = 0
+
         state_path = self._job_path / STATE_FN
         if state_path.exists():
             state_map = json.loads(state_path.read_text())
@@ -269,9 +304,13 @@ class JobManager:
             job = Job(job_id=job_id, jobs_path=self._jobs_path)
             job.save_spec(spec)
             if features_spec:
+                # TODO: Replace hardcoded freecad with config driven.
                 job.set_task_state("freecad", TaskState.CREATED)  # For now: Give every parts job a FreeCAD task.
+                job.feature_count = len(features_spec)
             if parts_spec:
+                # TODO: Replace hardcoded blender with config driven.
                 job.set_task_state("blender", TaskState.CREATED)  # For now: Give every assembly job a Blender task.
+                job.part_count = len(parts_spec)
             self._jobs[job_id] = job
             self.update_part_job_relation(job)
         return job
