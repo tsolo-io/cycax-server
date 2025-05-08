@@ -2,18 +2,20 @@ import logging
 import shutil
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from cycax_server.dependencies import JobManager, get_job_manager
+from cycax_server.internal.job_manager import JobState
 
 router = APIRouter()
 
 
 class PartSpec(BaseModel):
     name: str
-    features: list[dict]
+    features: list[dict] | None = None
+    parts: list[dict] | None = None
 
 
 class TaskState(BaseModel):
@@ -22,10 +24,15 @@ class TaskState(BaseModel):
 
 
 @router.get("/jobs", tags=["Jobs"])
-async def read_jobs(manager: Annotated[JobManager, Depends(get_job_manager)]):
+async def read_jobs(
+    manager: Annotated[JobManager, Depends(get_job_manager)],
+    state_in: Annotated[list[JobState] | None, Query()] = None,
+    state_not_in: Annotated[list[JobState] | None, Query()] = None,
+):
     """ """
+    logging.error("state %s, state_not_in %s", state_in, state_not_in)
     reply = {"data": []}
-    for job in manager.list_jobs():
+    for job in manager.list_jobs(states_in=state_in, states_not_in=state_not_in):
         reply["data"].append(job.dump(short=True))
     return reply
 
@@ -58,6 +65,8 @@ async def delete_job(job_id: str, manager: Annotated[JobManager, Depends(get_job
 async def job_list_tasks(job_id: str, manager: Annotated[JobManager, Depends(get_job_manager)]):
     """ """
     job = manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
     states = job.get_state()
     data = []
     for task_id, task_state in states["tasks"].items():
@@ -69,6 +78,8 @@ async def job_list_tasks(job_id: str, manager: Annotated[JobManager, Depends(get
 async def job_get_task_state(job_id: str, task_id: str, manager: Annotated[JobManager, Depends(get_job_manager)]):
     """ """
     job = manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
     states = job.get_state()
     state = states["tasks"][task_id]
     # TODO: RAISE 404 if not found.
@@ -79,6 +90,8 @@ async def job_get_task_state(job_id: str, task_id: str, manager: Annotated[JobMa
 async def task_set_job_state(job_id: str, task: TaskState, manager: Annotated[JobManager, Depends(get_job_manager)]):
     """ """
     job = manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
     job.set_task_state(task.name, task.state)
     return {}
 
@@ -87,6 +100,8 @@ async def task_set_job_state(job_id: str, task: TaskState, manager: Annotated[Jo
 async def task_spec(job_id: str, manager: Annotated[JobManager, Depends(get_job_manager)]):
     """ """
     job = manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
     spec = job.get_spec()
     return {"data": spec}
 
@@ -95,6 +110,8 @@ async def task_spec(job_id: str, manager: Annotated[JobManager, Depends(get_job_
 async def task_list_artifacts(job_id: str, manager: Annotated[JobManager, Depends(get_job_manager)]):
     """ """
     job = manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
     artifacts = []
     for artifact in job.list_artifacts():
         artifacts.append({"id": artifact, "type": "artifact"})
@@ -110,6 +127,8 @@ async def task_upload_artifacts(
 ):
     """ """
     job = manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
     logging.error(upload_file)
     logging.error(filename)
     destination = job.artifact_filepath(filename)
@@ -124,5 +143,7 @@ async def task_download_artifacts(
 ):
     """ """
     job = manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
     apath = job.get_artifact_path(artifact_name)
     return FileResponse(apath, filename=artifact_name)

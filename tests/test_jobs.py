@@ -22,7 +22,7 @@ def test_list_jobs():
 
 
 def test_post_job():
-    job_id = "97d170e1550eee4afc0af065b78cda302a97674c"
+    job_id = "cb891ab1ca8a68ce8610f0a1085e53fd2d4741f2"
     utils.remove_job(client, job_id)
     # Create a new Post.
     data = {"name": "test-part1", "features": []}
@@ -59,6 +59,6 @@ def test_job_list():
     assert len(jobs) > 1
 
     job_ids = [job["id"] for job in jobs]
-    for check_id in ("387ea31e1f26fdeeeb90d335fac48b5cd50beecf", "ed0d31456b5bf9b91e447b2d84af9c4569c33210"):
+    for check_id in ("ecbeb873a2d8611f300e2f8df877e8d77a9cd98c", "b2feb2b22c131b9d3e57ded026535b908e149495"):
         assert check_id in job_ids
         client.delete(f"/jobs/{check_id}")
