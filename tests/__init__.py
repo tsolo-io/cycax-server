@@ -1,3 +1,3 @@
-# SPDX-FileCopyrightText: 2024-present Martin Slabber <martin@tsolo.io>
+# SPDX-FileCopyrightText: 2025 Tsolo.io
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: Apache-2.0

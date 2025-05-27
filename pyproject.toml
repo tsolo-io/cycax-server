@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Tsolo.io
+#
+# SPDX-License-Identifier: Apache-2.0
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -5,7 +9,7 @@ build-backend = "hatchling.build"
 [project]
 name = "cycax-server"
 dynamic = ["version"]
-description = ''
+description = 'CyCAx Server, an API for scheduling the creation of CAD files.'
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"
