@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Tsolo.io
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Tests the upload, list and download of a Jobs artifacts."""
 
 import tempfile

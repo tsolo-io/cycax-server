@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Tsolo.io
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from cycax_server.internal.job_manager import JobManager
 from cycax_server.internal.settings import Settings
 

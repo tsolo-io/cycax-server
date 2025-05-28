@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Tsolo.io
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from fastapi.testclient import TestClient
 
 from cycax_server.dependencies import get_settings

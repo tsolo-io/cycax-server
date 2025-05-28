@@ -1,3 +1,6 @@
+%% SPDX-FileCopyrightText: 2025 Tsolo.io
+%%
+%% SPDX-License-Identifier: Apache-2.0
 sequenceDiagram
     actor E as Engineer
     participant C as CyCAx
@@ -13,7 +16,7 @@ sequenceDiagram
     Note right of E: Send Parts to Server
     C->>S: Post Job Part 2
     F<<->>S: Check for available Tasks
-    S<<->>+F: Get Part 1 Specifications 
+    S<<->>+F: Get Part 1 Specifications
     C->>S: Post Job Part n
     C-xS: Check if Job Part 1 is done
     Note right of E: Check Server for completion
@@ -32,7 +35,7 @@ sequenceDiagram
     C->>S: Check Job Part n is done
     C<<->>S: Download Part n Artifacts
     end
-    Note right of E: Files received notify Engineer 
+    Note right of E: Files received notify Engineer
     C->>-E: Run complete
     loop Every 5 seconds
         F-xS: Check for available Tasks
