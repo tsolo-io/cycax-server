@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2025 Tsolo.io
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+name: cycax
+
+services:
+  cycaxserver:
+    image: gitea.tu.tsolo.net/tsolo/cycax-server:1.0.3
+    environment:
+      - DEVELOPMENT=false
+      - DEBUG=false
+    ports:
+      - 8765:8765
+    volumes:
+      - ./data:/data
+  cycaxfreecad:
+    image: gitea.tu.tsolo.net/tsolo/cycax-freecad-worker:nightly
+    environment:
+      - DEVELOPMENT=false
+      - DEBUG=false
+      - CYCAX_SERVER=http://cycaxserver:8765
+  cycaxblender:
+    image: gitea.tu.tsolo.net/tsolo/cycax-blender-worker:nightly
+    environment:
+      - DEVELOPMENT=false
+      - DEBUG=false
+      - CYCAX_SERVER=http://cycaxserver:8765
