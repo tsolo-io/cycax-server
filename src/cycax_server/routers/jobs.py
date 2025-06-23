@@ -34,7 +34,6 @@ async def read_jobs(
     state_not_in: Annotated[list[JobState] | None, Query()] = None,
 ):
     """ """
-    logging.error("state %s, state_not_in %s", state_in, state_not_in)
     reply = {"data": []}
     for job in manager.list_jobs(states_in=state_in, states_not_in=state_not_in):
         reply["data"].append(job.dump(short=True))

@@ -5,6 +5,7 @@
 import hashlib
 import json
 import logging
+import time
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
@@ -42,6 +43,7 @@ class Job:
         self._job_path: Path = jobs_path / job_id
         self._tasks: dict = {}
         self.state: JobState = JobState.CREATED
+        self.state_changed_at = time.time()
         self.feature_count: int = 0
         self.parts_count: int = 0
 
@@ -149,9 +151,17 @@ class Job:
             else:
                 # When tasks are in different states the Job is running.
                 state = JobState.RUNNING
-        self.state = state
+        if self.state != state:
+            self.state_changed_at = time.time()
+            self.state = state
         if save:
             self.save_state()
+
+    def reset(self):
+        self.state = JobState.CREATED
+        self.state_changed_at = time.time()
+        for key in self._tasks.keys():
+            self.set_task_state(key, TaskState.CREATED)
 
     def get_tasks(self) -> dict:
         """Get the tasks associated with this Job."""
@@ -264,7 +274,7 @@ class JobManager:
         return_jobs = []
         states_not_in_set = set(states_not_in) if states_not_in else set()
         for job in self._jobs.values():
-            logging.warning("job %s, states_in %s, states_not_in %s", job, states_in, states_not_in)
+            # logging.warning("job %s, states_in %s, states_not_in %s", job, states_in, states_not_in)
             if job.state in states_not_in_set:
                 continue
             if states_in is None or job.state in states_in:
